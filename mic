@@ -1,0 +1,132 @@
+#!/usr/bin/env python
+
+import requests
+import tarfile
+import sys
+import configparser
+import shutil
+import os
+
+def download_file(url, destination):
+    try:
+        with requests.get(url, stream=True) as response:
+            response.raise_for_status()
+            with open(destination, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+        print("Package Downloaded")
+    except requests.exceptions.RequestException as e:
+        print("Error:", e)
+try:
+    test = sys.argv[1]
+except IndexError:
+    print("""mic: the micOS package manager
+
+Usage:
+install: installs a package
+install-local: installs a package from a local file
+build: makes a package
+suhhh""")
+    exit()
+
+def ifdb(pac):
+    if (os.path.exists("/etc/mic/pacdb.ini") != True):
+        skjss = open("/etc/mic/pacdb.ini", "w")
+    pacdb = configparser.ConfigParser()
+    pacdb.read("/etc/mic/pacdb.ini")
+    if (pac in pacdb):
+        print("Package Already Installed")
+        return True
+    else:
+        return False
+    
+
+
+def download(pac):
+    print("Downloading Package...")
+    download_file("https://micos.paxtonpenguin.com/packages/" + pac + "/current-version", "/tmp/current-version")
+    with open('/tmp/current-version', 'r') as file:
+        data = file.read().rstrip()
+    download_file("https://micos.paxtonpenguin.com/packages/" + pac + "/" + pac + "-" + data + ".mic", "/tmp/" + pac + ".mic")
+
+def install(badpac):
+    if ".mic" in badpac:
+        tar = tarfile.open(badpac, "r")
+        pac = badpac.replace(".mic", "")
+    else:
+        pac = badpac
+    tar.extractall("/tmp/")
+    config = configparser.ConfigParser()
+    config.read("/tmp/" + pac + "/mic.ini")
+    try:
+        print("Getting Dependencies...")
+        for key in config['deps']:
+            download(key)
+            install(key)
+    except:
+        print("Installing...")
+    source_dir = "/tmp/" + pac + "/root/"
+    target_dir = '/'
+    file_names = os.listdir(source_dir)
+    for file_name in file_names:
+        try:
+            shutil.move(os.path.join(source_dir, file_name), target_dir)
+        except:
+            print("package already installed")
+            exit()
+    try:
+        if ('systemd' in config["post-install"]):
+            os.system("systemctl enable " + config["post-install"]["systemd"])
+            os.system("systemctl run " + config["post-install"]["systemd"])
+        if ('cmd' in config["post-install"]):
+            os.system(config["post-install"]["cmd"])
+        print("Installation Complete")
+    except:
+        print("Installation Complete")
+
+def adddb(pac):
+    pacdb[pac] = {"ver": config["package"]["ver"]}
+    with open('/etc/mic/pacdb.ini', 'w') as configfile:
+        pacdb.write(configfile)
+
+if (sys.argv[1] == "install"):
+    if os.geteuid() != 0:
+        exit("you need to run this as root/sudo")
+    for arg in sys.argv[2:]:
+        if self.ifdb(arg) == True:
+            continue
+        download(arg)
+        install(arg)
+        adddb(arg)
+
+if (sys.argv[1] == "install-local"):
+    ifdb(sys.argv[2])
+    if os.geteuid() != 0:
+        exit("you need to run this as root/sudo")
+    install(sys.argv[2])
+    adddb(sys.argv[2])
+
+if (sys.argv[1] == "build"):
+    pac_d = input("Directory of Package Contents: ")
+    if (os.path.isfile(pac_d + "/mic.ini") == False):
+        config = configparser.ConfigParser()
+        pac_name = input("Name of Package: ")
+        pac_ver = input("Package Version: ")
+        pac_pin = input("Does you package need post-install stuff? [y/n]: ")
+        if (pac_pin == y or pac_pin == Y): 
+            pac_sysd = input("Systemd service name [enter to skip]: ")
+
+        config["package"] = {"name": pac_name, "ver": pac_ver}
+        config["post-install"] = {}
+        if pac_sysd != "":
+            config["post-install"]["systemd"] = pac_sysd
+        
+        with open(pac-d + "/mic.ini", 'w') as configfile:
+            config.write(configfile)
+        
+    config = configparser.ConfigParser()
+    config.read(pac_d + '/mic.ini')
+    pac_name = config["package"]["name"]
+    tar = tarfile.open(pac_name + ".mic", 'w')
+    tar.add(pac_d)
+    tar.close()
