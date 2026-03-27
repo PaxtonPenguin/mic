@@ -20,13 +20,13 @@ def download_file(url, destination):
 try:
     test = sys.argv[1]
 except IndexError:
-    print("""mic: the micOS package manager
+    print("""mic 0.2
 
 Usage:
 install: installs a package
 install-local: installs a package from a local file
 build: makes a package
-suhhh""")
+""")
     exit()
 
 def ifdb(pac):
@@ -40,8 +40,6 @@ def ifdb(pac):
     else:
         return False
     
-
-
 def download(pac):
     print("Downloading Package...")
     download_file("https://micos.paxtonpenguin.com/packages/" + pac + "/current-version", "/tmp/current-version")
@@ -66,10 +64,14 @@ def install(badpac):
     except:
         print("Installing...")
     source_dir = "/tmp/" + pac + "/root/"
-    target_dir = '/'
+    if (sys.argv[3] == "-L"):
+        target_dir = sys.argv[4]
+    else:
+        target_dir = '/'
     file_names = os.listdir(source_dir)
     for file_name in file_names:
         try:
+            pacdb[pac + ".rm"][file_name] = ""
             shutil.move(os.path.join(source_dir, file_name), target_dir)
         except:
             print("package already installed")
@@ -130,3 +132,10 @@ if (sys.argv[1] == "build"):
     tar = tarfile.open(pac_name + ".mic", 'w')
     tar.add(pac_d)
     tar.close()
+
+if (sys.argv[1] == "remove"):
+    pacdb = configparser.ConfigParser()
+    pacdb.read("/etc/mic/pacdb.ini")
+    for arg in sys.argv[2:]:
+        for key in pacdb[arg + ".rm"]:
+            os.system("rm -rf " + arg)
