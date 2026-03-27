@@ -20,7 +20,7 @@ def download_file(url, destination):
 try:
     test = sys.argv[1]
 except IndexError:
-    print("""mic 0.2
+    print("""mic 0.2.1
 
 Usage:
 install: installs a package
@@ -41,17 +41,15 @@ def ifdb(pac):
         return False
     
 def download(pac):
-    print("Downloading Package...")
-    download_file("https://micos.paxtonpenguin.com/packages/" + pac + "/current-version", "/tmp/current-version")
-    with open('/tmp/current-version', 'r') as file:
-        data = file.read().rstrip()
-    download_file("https://micos.paxtonpenguin.com/packages/" + pac + "/" + pac + "-" + data + ".mic", "/tmp/" + pac + ".mic")
+    print("Downloading Package " + pac + "...")
+    download_file("https://micos.paxtonpenguin.com/packages/" + pac + "/" + pac + "-current.mic", "/tmp/" + pac + ".mic")
 
 def install(badpac):
     if ".mic" in badpac:
         tar = tarfile.open(badpac, "r")
         pac = badpac.replace(".mic", "")
     else:
+        tar = tarfile.open(badpac + ".mic", "r")
         pac = badpac
     tar.extractall("/tmp/")
     config = configparser.ConfigParser()
@@ -62,20 +60,24 @@ def install(badpac):
             download(key)
             install(key)
     except:
-        print("Installing...")
+        print("Installing " + badpac + "...")
     source_dir = "/tmp/" + pac + "/root/"
-    if (sys.argv[3] == "-L"):
-        target_dir = sys.argv[4]
-    else:
+    try: 
+        if (sys.argv[3] == "-L"):
+            target_dir = sys.argv[4]
+    except:
         target_dir = '/'
     file_names = os.listdir(source_dir)
     for file_name in file_names:
-        try:
+        #try:
+            pacdb = configparser.ConfigParser()
+            pacdb.read("/etc/mic/pacdb.ini")
+            pacdb[pac + ".rm"] = {}
             pacdb[pac + ".rm"][file_name] = ""
             shutil.move(os.path.join(source_dir, file_name), target_dir)
-        except:
-            print("package already installed")
-            exit()
+        #except:
+            #print("package already installed")
+            #exit()
     try:
         if ('systemd' in config["post-install"]):
             os.system("systemctl enable " + config["post-install"]["systemd"])
@@ -87,6 +89,10 @@ def install(badpac):
         print("Installation Complete")
 
 def adddb(pac):
+    config = configparser.ConfigParser()
+    config.read("/tmp/" + pac + "/mic.ini")
+    pacdb = configparser.ConfigParser()
+    pacdb.read("/etc/mic/pacdb.ini")
     pacdb[pac] = {"ver": config["package"]["ver"]}
     with open('/etc/mic/pacdb.ini', 'w') as configfile:
         pacdb.write(configfile)
@@ -95,7 +101,7 @@ if (sys.argv[1] == "install"):
     if os.geteuid() != 0:
         exit("you need to run this as root/sudo")
     for arg in sys.argv[2:]:
-        if self.ifdb(arg) == True:
+        if ifdb(arg) == True:
             continue
         download(arg)
         install(arg)
