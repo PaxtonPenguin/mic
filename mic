@@ -55,6 +55,7 @@ def install(badpac):
     config = configparser.ConfigParser()
     config.read("/tmp/" + pac + "/mic.ini")
     try:
+        zdjkfnefn = config['deps']
         print("Getting Dependencies...")
         for key in config['deps']:
             download(key)
@@ -69,15 +70,17 @@ def install(badpac):
         target_dir = '/'
     file_names = os.listdir(source_dir)
     for file_name in file_names:
-        #try:
+        try:
+            shutil.move(os.path.join(source_dir, file_name), target_dir)
             pacdb = configparser.ConfigParser()
             pacdb.read("/etc/mic/pacdb.ini")
             pacdb[pac + ".rm"] = {}
-            pacdb[pac + ".rm"][file_name] = ""
-            shutil.move(os.path.join(source_dir, file_name), target_dir)
-        #except:
-            #print("package already installed")
-            #exit()
+            pacdb[pac + ".rm"][target_dir + file_name] = ""
+            with open('/etc/mic/pacdb.ini', 'w') as configfile:
+                pacdb.write(configfile)
+        except:
+            print("package already installed")
+            exit()
     try:
         if ('systemd' in config["post-install"]):
             os.system("systemctl enable " + config["post-install"]["systemd"])
@@ -112,7 +115,11 @@ if (sys.argv[1] == "install-local"):
     if os.geteuid() != 0:
         exit("you need to run this as root/sudo")
     install(sys.argv[2])
-    adddb(sys.argv[2])
+    if ".mic" in sys.argv[2]:
+        pac = sys.argv[2].replace(".mic", "")
+    else:
+        pac = sys.argv[2]
+    adddb(pac)
 
 if (sys.argv[1] == "build"):
     pac_d = input("Directory of Package Contents: ")
@@ -129,7 +136,7 @@ if (sys.argv[1] == "build"):
         if pac_sysd != "":
             config["post-install"]["systemd"] = pac_sysd
         
-        with open(pac-d + "/mic.ini", 'w') as configfile:
+        with open(pac_d + "/mic.ini", 'w') as configfile:
             config.write(configfile)
         
     config = configparser.ConfigParser()
@@ -140,8 +147,10 @@ if (sys.argv[1] == "build"):
     tar.close()
 
 if (sys.argv[1] == "remove"):
+    if os.geteuid() != 0:
+        exit("you need to run this as root/sudo")
     pacdb = configparser.ConfigParser()
     pacdb.read("/etc/mic/pacdb.ini")
     for arg in sys.argv[2:]:
         for key in pacdb[arg + ".rm"]:
-            os.system("rm -rf " + arg)
+            os.system("rm -rf " + key)
