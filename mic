@@ -6,6 +6,7 @@ import sys
 import configparser
 import shutil
 import os
+import progressbar
 
 def download_file(url, destination):
     try:
@@ -20,7 +21,7 @@ def download_file(url, destination):
 try:
     test = sys.argv[1]
 except IndexError:
-    print("""mic 0.3.1
+    print("""mic 0.3.2
 
 Usage:
 install: installs a package
@@ -71,6 +72,7 @@ def install(badpac):
     except:
         target_dir = '/'
     file_names = os.listdir(source_dir)
+    bar = progressbar.ProgressBar(max_value=len(file_names))
     for file_name in file_names:
         try:
             shutil.move(os.path.join(source_dir, file_name), target_dir)
@@ -78,11 +80,12 @@ def install(badpac):
             pacdb.read("/etc/mic/pacdb.ini")
             pacdb[pac + ".rm"] = {}
             pacdb[pac + ".rm"][target_dir + file_name] = ""
-            with open('/etc/mic/pacdb.ini', 'w') as configfile:
-                pacdb.write(configfile)
+            bar.update(file_name)
         except:
             print("package already installed")
             exit()
+    with open('/etc/mic/pacdb.ini', 'w') as configfile:
+        pacdb.write(configfile)
     try:
         if ('systemd' in config["post-install"]):
             os.system("systemctl enable " + config["post-install"]["systemd"])
