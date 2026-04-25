@@ -20,12 +20,14 @@ def download_file(url, destination):
 try:
     test = sys.argv[1]
 except IndexError:
-    print("""mic 0.2.1
+    print("""mic 0.3
 
 Usage:
 install: installs a package
 install-local: installs a package from a local file
 build: makes a package
+remove: removed a package
+update: removes and reinstalls a package
 """)
     exit()
 
@@ -63,11 +65,6 @@ def install(badpac):
     except:
         print("Installing " + badpac + "...")
     source_dir = "/tmp/" + pac + "/root/"
-    try: 
-        if (sys.argv[3] == "-L"):
-            target_dir = sys.argv[4]
-    except:
-        target_dir = '/'
     file_names = os.listdir(source_dir)
     for file_name in file_names:
         try:
@@ -103,8 +100,17 @@ def adddb(pac):
 if (sys.argv[1] == "install"):
     if os.geteuid() != 0:
         exit("you need to run this as root/sudo")
+        try: 
+            if (sys.argv[2] == "-L"):
+                target_dir = sys.argv[3]
+        except:
+            target_dir = '/'
     for arg in sys.argv[2:]:
         if ifdb(arg) == True:
+            continue
+        if sys.argv[2] == "-L":
+            continue
+        if sys.argv[3].startswith("/"):
             continue
         download(arg)
         install(arg)
@@ -154,3 +160,25 @@ if (sys.argv[1] == "remove"):
     for arg in sys.argv[2:]:
         for key in pacdb[arg + ".rm"]:
             os.system("rm -rf " + key)
+    with open("/etc/mic/pacdb.ini", "r") as f:
+        p.readfp(f)
+    for arg in sys.argv[2:]:
+        p.removesection(arg)
+        p.removesection(arg + ".rm") 
+
+if (sys.argv[1] == "update"):
+    if os.geteuid() != 0:
+        exit("you need to run this as root/sudo")
+    pacdb = configparser.ConfigParser()
+    pacdb.read("/etc/mic/pacdb.ini")
+    for arg in sys.argv[2:]:
+        for key in pacdb[arg + ".rm"]:
+            os.system("rm -rf " + key)
+    with open("/etc/mic/pacdb.ini", "r") as f:
+        p.readfp(f)
+    for arg in sys.argv[2:]:
+        p.removesection(arg)
+        p.removesection(arg + ".rm") 
+    download(arg)
+    install(arg)
+    adddb(arg)
