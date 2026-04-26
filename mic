@@ -72,7 +72,7 @@ def install(badpac):
     except:
         target_dir = '/'
     file_names = os.listdir(source_dir)
-    bar = progressbar.ProgressBar(max_value=len(file_names))
+    bar = progressbar.ProgressBar(maxval=len(file_names))
     for file_name in file_names:
         try:
             shutil.move(os.path.join(source_dir, file_name), target_dir)
