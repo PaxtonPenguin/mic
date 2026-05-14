@@ -21,7 +21,7 @@ def download_file(url, destination):
 try:
     test = sys.argv[1]
 except IndexError:
-    print("""mic 0.3.2
+    print("""mic 0.3.3
 
 Usage:
 install: installs a package
@@ -33,10 +33,17 @@ update: removes and reinstalls a package
     exit()
 
 def ifdb(pac):
-    if (os.path.exists("/etc/mic/pacdb.ini") != True):
-        skjss = open("/etc/mic/pacdb.ini", "w")
+    try: 
+        if (sys.argv[2] == "-L"):
+            target_dir = sys.argv[3]
+    except:
+        target_dir = '/'
+    if (os.path.exists(target_dir + "etc/mic/pacdb.ini") != True):
+        skjss = open(target_dir + "etc/mic/pacdb.ini", "w")
+    if (os.path.exits(target_dir + "etc/mic/") != True):
+        os.mkdir(target_dir + "etc/mic/")
     pacdb = configparser.ConfigParser()
-    pacdb.read("/etc/mic/pacdb.ini")
+    pacdb.read(target_dir + "etc/mic/pacdb.ini")
     if (pac in pacdb):
         print("Package Already Installed")
         return True
@@ -52,7 +59,7 @@ def install(badpac):
         tar = tarfile.open(badpac, "r")
         pac = badpac.replace(".mic", "")
     else:
-        tar = tarfile.open(badpac + ".mic", "r")
+        tar = tarfile.open("/tmp/" + badpac + ".mic", "r")
         pac = badpac
     tar.extractall("/tmp/")
     config = configparser.ConfigParser()
@@ -66,25 +73,19 @@ def install(badpac):
     except:
         print("Installing " + badpac + "...")
     source_dir = "/tmp/" + pac + "/root/"
-    try: 
-        if (sys.argv[2] == "-L"):
-            target_dir = sys.argv[3]
-    except:
-        target_dir = '/'
     file_names = os.listdir(source_dir)
     bar = progressbar.ProgressBar(maxval=len(file_names))
+    pacdb = configparser.ConfigParser()
+    pacdb.read("/etc/mic/pacdb.ini")
     for file_name in file_names:
         try:
             shutil.move(os.path.join(source_dir, file_name), target_dir)
-            pacdb = configparser.ConfigParser()
-            pacdb.read("/etc/mic/pacdb.ini")
             pacdb[pac + ".rm"] = {}
             pacdb[pac + ".rm"][target_dir + file_name] = ""
-            bar.update(file_name)
+            bar.update(file_names.index(file_name))
         except:
-            print("package already installed")
-            exit()
-    with open('/etc/mic/pacdb.ini', 'w') as configfile:
+            print("test")
+    with open(target_dir + 'etc/mic/pacdb.ini', 'w') as configfile:
         pacdb.write(configfile)
     try:
         if ('systemd' in config["post-install"]):
@@ -106,7 +107,6 @@ def adddb(pac):
         pacdb.write(configfile)
 
 if (sys.argv[1] == "install"):
-    print("chaz")
     if os.geteuid() != 0:
         exit("you need to run this as root/sudo")
     if sys.argv[2] == "-L":
@@ -139,7 +139,7 @@ if (sys.argv[1] == "build"):
         pac_name = input("Name of Package: ")
         pac_ver = input("Package Version: ")
         pac_pin = input("Does you package need post-install stuff? [y/n]: ")
-        if (pac_pin == y or pac_pin == Y): 
+        if (pac_pin == "y" or pac_pin == "Y"): 
             pac_sysd = input("Systemd service name [enter to skip]: ")
 
         config["package"] = {"name": pac_name, "ver": pac_ver}
