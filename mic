@@ -21,7 +21,7 @@ def download_file(url, destination):
 try:
     test = sys.argv[1]
 except IndexError:
-    print("""mic 0.3.3
+    print("""mic 0.3.4
 
 Usage:
 install: installs a package
@@ -33,15 +33,16 @@ update: removes and reinstalls a package
     exit()
 
 def ifdb(pac):
-    try: 
-        if (sys.argv[2] == "-L"):
-            target_dir = sys.argv[3]
-    except:
+    global target_dir
+    if (sys.argv[2] == "-L"):
+        target_dir = sys.argv[3]
+    else:
         target_dir = '/'
-    if (os.path.exists(target_dir + "etc/mic/pacdb.ini") != True):
-        skjss = open(target_dir + "etc/mic/pacdb.ini", "w")
     if (os.path.exits(target_dir + "etc/mic/") != True):
         os.mkdir(target_dir + "etc/mic/")
+    if (os.path.exists(target_dir + "etc/mic/pacdb.ini") != True):
+        skjss = open(target_dir + "etc/mic/pacdb.ini", "w")
+    global pacdb
     pacdb = configparser.ConfigParser()
     pacdb.read(target_dir + "etc/mic/pacdb.ini")
     if (pac in pacdb):
@@ -55,6 +56,8 @@ def download(pac):
     download_file("https://micos.paxtonpenguin.com/packages/" + pac + "/" + pac + "-current.mic", "/tmp/" + pac + ".mic")
 
 def install(badpac):
+    global tar
+    global pac
     if ".mic" in badpac:
         tar = tarfile.open(badpac, "r")
         pac = badpac.replace(".mic", "")
@@ -62,6 +65,7 @@ def install(badpac):
         tar = tarfile.open("/tmp/" + badpac + ".mic", "r")
         pac = badpac
     tar.extractall("/tmp/")
+    global config
     config = configparser.ConfigParser()
     config.read("/tmp/" + pac + "/mic.ini")
     try:
@@ -72,19 +76,20 @@ def install(badpac):
             install(key)
     except:
         print("Installing " + badpac + "...")
+    global source_dir
+    global file_names
+    global bar
     source_dir = "/tmp/" + pac + "/root/"
     file_names = os.listdir(source_dir)
     bar = progressbar.ProgressBar(maxval=len(file_names))
-    pacdb = configparser.ConfigParser()
-    pacdb.read("/etc/mic/pacdb.ini")
     for file_name in file_names:
         try:
             shutil.move(os.path.join(source_dir, file_name), target_dir)
             pacdb[pac + ".rm"] = {}
             pacdb[pac + ".rm"][target_dir + file_name] = ""
             bar.update(file_names.index(file_name))
-        except:
-            print("test")
+        except shutil.Error:
+            print("skipping file (good)")
     with open(target_dir + 'etc/mic/pacdb.ini', 'w') as configfile:
         pacdb.write(configfile)
     try:
