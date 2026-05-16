@@ -10,26 +10,28 @@ import progressbar
 
 def download_file(url, destination):
     try:
+	size = requests.get(url, stream=True).headers['Content-length']
+	dlprog = progressbar.ProgressBar(maxval=size)
         with requests.get(url, stream=True) as response:
             response.raise_for_status()
             with open(destination, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=8192):
                     f.write(chunk)
+		    bar.update(8192)
         print("Package Downloaded")
     except requests.exceptions.RequestException as e:
         print("Error:", e)
 try:
     test = sys.argv[1]
 except IndexError:
-    print("""mic 0.3.4
+    print("""mic 0.3.5
 
 Usage:
 install: installs a package
 install-local: installs a package from a local file
 build: makes a package
 remove: removed a package
-update: removes and reinstalls a package
-""")
+update: removes and reinstalls a package""")
     exit()
 
 def ifdb(pac):
@@ -55,7 +57,7 @@ def download(pac):
     print("Downloading Package " + pac + "...")
     download_file("https://micos.paxtonpenguin.com/packages/" + pac + "/" + pac + "-current.mic", "/tmp/" + pac + ".mic")
 
-def install(badpac):
+def extract(badpac):
     global tar
     global pac
     if ".mic" in badpac:
@@ -65,6 +67,8 @@ def install(badpac):
         tar = tarfile.open("/tmp/" + badpac + ".mic", "r")
         pac = badpac
     tar.extractall("/tmp/")
+
+def install(badpac):
     global config
     config = configparser.ConfigParser()
     config.read("/tmp/" + pac + "/mic.ini")
@@ -87,11 +91,11 @@ def install(badpac):
             shutil.move(os.path.join(source_dir, file_name), target_dir)
             pacdb[pac + ".rm"] = {}
             pacdb[pac + ".rm"][target_dir + file_name] = ""
+	    with open(target_dir + 'etc/mic/pacdb.ini', 'w') as configfile:
+        	pacdb.write(configfile)
             bar.update(file_names.index(file_name))
         except shutil.Error:
             print("skipping file (good)")
-    with open(target_dir + 'etc/mic/pacdb.ini', 'w') as configfile:
-        pacdb.write(configfile)
     try:
         if ('systemd' in config["post-install"]):
             os.system("systemctl enable " + config["post-install"]["systemd"])
@@ -123,6 +127,7 @@ if (sys.argv[1] == "install"):
             continue
             print("the hell")
         download(arg)
+	extract(arg)
         install(arg)
         adddb(arg)
 
@@ -130,6 +135,7 @@ if (sys.argv[1] == "install-local"):
     ifdb(sys.argv[2])
     if os.geteuid() != 0:
         exit("you need to run this as root/sudo")
+    extract(sys.argv[2])
     install(sys.argv[2])
     if ".mic" in sys.argv[2]:
         pac = sys.argv[2].replace(".mic", "")
@@ -182,6 +188,11 @@ if (sys.argv[1] == "update"):
     pacdb = configparser.ConfigParser()
     pacdb.read("/etc/mic/pacdb.ini")
     for arg in sys.argv[2:]:
+	extract(arg)
+	config = configparser.ConfigParser()
+        config.read("/tmp/" + pac + "/mic.ini")
+        if (config["package"]["ver"] == pacdb[arg]["ver"]:
+		exit("no updates")
         for key in pacdb[arg + ".rm"]:
             os.system("rm -rf " + key)
     with open("/etc/mic/pacdb.ini", "r") as f:
