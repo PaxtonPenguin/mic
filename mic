@@ -24,7 +24,7 @@ def download_file(url, destination):
 try:
 	test = sys.argv[1]
 except IndexError:
-	print("""mic 0.3.5
+	print("""mic 0.3.6
 
 Usage:
 install: installs a package
@@ -110,7 +110,7 @@ def adddb(pac):
 	config = configparser.ConfigParser()
 	config.read("/tmp/" + pac + "/mic.ini")
 	pacdb = configparser.ConfigParser()
-	pacdb.read("/etc/mic/pacdb.ini")
+	pacdb.read(target_dir + "/mic/pacdb.ini")
 	pacdb[pac] = {"ver": config["package"]["ver"]}
 	with open('/etc/mic/pacdb.ini', 'w') as configfile:
 		pacdb.write(configfile)
@@ -172,11 +172,11 @@ if (sys.argv[1] == "remove"):
 	if os.geteuid() != 0:
 		exit("you need to run this as root/sudo")
 	pacdb = configparser.ConfigParser()
-	pacdb.read("/etc/mic/pacdb.ini")
+	pacdb.read(target_dir + "/mic/pacdb.ini")
 	for arg in sys.argv[2:]:
 		for key in pacdb[arg + ".rm"]:
 			os.system("rm -rf " + key)
-	with open("/etc/mic/pacdb.ini", "r") as f:
+	with open(target_dir + "/mic/pacdb.ini", "r") as f:
 		p.readfp(f)
 	for arg in sys.argv[2:]:
 		p.removesection(arg)
@@ -186,7 +186,7 @@ if (sys.argv[1] == "update"):
 	if os.geteuid() != 0:
 		exit("you need to run this as root/sudo")
 	pacdb = configparser.ConfigParser()
-	pacdb.read("/etc/mic/pacdb.ini")
+	pacdb.read(target_dir + "/mic/pacdb.ini")
 	for arg in sys.argv[2:]:
 		extract(arg)
 		config = configparser.ConfigParser()
@@ -195,7 +195,7 @@ if (sys.argv[1] == "update"):
 			exit("no updates")
 		for key in pacdb[arg + ".rm"]:
 			os.system("rm -rf " + key)
-	with open("/etc/mic/pacdb.ini", "r") as f:
+	with open(target_dir + "/mic/pacdb.ini", "r") as f:
 		p.readfp(f)
 	for arg in sys.argv[2:]:
 		p.removesection(arg)
