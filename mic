@@ -112,7 +112,7 @@ def adddb(pac):
 	pacdb = configparser.ConfigParser()
 	pacdb.read(target_dir + "/mic/pacdb.ini")
 	pacdb[pac] = {"ver": config["package"]["ver"]}
-	with open('/etc/mic/pacdb.ini', 'w') as configfile:
+	with open(target_dir + '/mic/pacdb.ini', 'w') as configfile:
 		pacdb.write(configfile)
 
 if (sys.argv[1] == "install"):
