@@ -17,7 +17,7 @@ def download_file(url, destination):
 			with open(destination, 'wb') as f:
 				for chunk in response.iter_content(chunk_size=8192):
 					f.write(chunk)
-					bar.update(8192)
+					dlprog.update(8192)
 		print("Package Downloaded")
 	except requests.exceptions.RequestException as e:
 			print("Error:", e)
