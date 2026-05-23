@@ -40,7 +40,7 @@ def ifdb(pac):
 		target_dir = sys.argv[3]
 	else:
 		target_dir = '/'
-	if (os.path.exits(target_dir + "etc/mic/") != True):
+	if (os.path.exists(target_dir + "etc/mic/") != True):
 		os.mkdir(target_dir + "etc/mic/")
 	if (os.path.exists(target_dir + "etc/mic/pacdb.ini") != True):
 		skjss = open(target_dir + "etc/mic/pacdb.ini", "w")
